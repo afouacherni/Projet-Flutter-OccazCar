@@ -3,10 +3,78 @@ class AIService {
 
   /// Generate a short description for a vehicle given structured data.
   /// This is a placeholder — integrate a real AI/LLM API here.
-  Future<String> generateDescription(Map<String, dynamic> vehicleData) async {
-    final make = vehicleData['make'] ?? '';
-    final model = vehicleData['model'] ?? '';
-    final year = vehicleData['year'] ?? '';
-    return 'Voiture $make $model ($year) — description automatique.';
+  Future<String> generateDescription({
+    String? marque,
+    String? modele,
+    int? annee,
+    int? kilometrage,
+    Map<String, dynamic>? vehicleData,
+  }) async {
+    // Utiliser les paramètres nommés ou les données du map
+    final make = marque ?? vehicleData?['make'] ?? '';
+    final model = modele ?? vehicleData?['model'] ?? '';
+    final year = annee ?? vehicleData?['year'] ?? '';
+    final mileage = kilometrage ?? vehicleData?['mileage'] ?? 0;
+
+    // Simulation d'une génération AI
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    return '''
+Superbe $make $model de $year ! 
+
+Ce véhicule en excellent état affiche seulement $mileage km au compteur. 
+Entretenu avec soin, il vous garantit des années de conduite sans souci.
+
+✅ Historique complet disponible
+✅ Contrôle technique à jour  
+✅ Première main
+✅ Jamais accidenté
+
+N'hésitez pas à me contacter pour plus d'informations ou organiser un essai !
+'''.trim();
+  }
+
+  /// Génère un rapport de dégâts basé sur des photos
+  Future<String> generateDamageReport(List<String> photoUrls) async {
+    await Future.delayed(const Duration(seconds: 1));
+    
+    return '''
+📋 RAPPORT D'ÉTAT DU VÉHICULE
+
+🟢 Carrosserie : Excellent état général
+🟢 Peinture : Aucune rayure visible
+🟢 Pare-brise : Intact, sans impact
+🟡 Jantes : Légères traces d'usure normale
+🟢 Intérieur : Très propre, bien entretenu
+
+Note globale : ⭐⭐⭐⭐⭐ (5/5)
+
+Ce véhicule présente un état remarquable pour son âge.
+'''.trim();
+  }
+
+  /// Suggère un prix basé sur les caractéristiques
+  Future<Map<String, double>> suggestPrice({
+    required String marque,
+    required String modele,
+    required int annee,
+    required int kilometrage,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    // Prix de base fictif
+    double basePrice = 20000;
+    
+    // Ajustements
+    basePrice -= (DateTime.now().year - annee) * 1000;
+    basePrice -= (kilometrage / 10000) * 500;
+    
+    if (basePrice < 5000) basePrice = 5000;
+    
+    return {
+      'min': basePrice * 0.9,
+      'suggested': basePrice,
+      'max': basePrice * 1.1,
+    };
   }
 }

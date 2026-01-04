@@ -9,6 +9,7 @@ import '../widgets/vehicle_list_item.dart';
 import '../../domain/usecases/search_vehicles.dart';
 import 'filtres_avances_page.dart';
 import '../../../favoris/presentation/providers/favoris_provider.dart';
+import '../../../alertes/presentation/pages/creer_alerte_page.dart';
 
 class RecherchePage extends ConsumerStatefulWidget {
   const RecherchePage({super.key});
@@ -123,10 +124,52 @@ class _RecherchePageState extends ConsumerState<RecherchePage> {
             '${state.totalCount} r\u00e9sultat${state.totalCount > 1 ? 's' : ''}',
             style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
           ),
+          if (filters.hasActiveFilters) ...[
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () => _createAlertFromFilters(filters),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.notifications_active_outlined,
+                      size: 14,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Créer alerte',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(context).primaryColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
           const Spacer(),
           _buildSortDropdown(filters),
         ],
       ),
+    );
+  }
+
+  void _createAlertFromFilters(SearchFilters filters) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const CreerAlertePage()),
     );
   }
 

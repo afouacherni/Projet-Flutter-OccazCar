@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../data/models/message_model.dart';
 import '../../../../data/models/conversation_model.dart';
@@ -35,31 +37,79 @@ class ConversationsState {
 class ConversationsNotifier extends StateNotifier<ConversationsState> {
   final ChatRepository? _repository;
   String? _currentUserId;
+  StreamSubscription<List<ConversationModel>>? _conversationsSubscription;
 
   ConversationsNotifier(this._repository) : super(const ConversationsState()) {
     _initUserId();
   }
 
+  @override
+  void dispose() {
+    _conversationsSubscription?.cancel();
+    super.dispose();
+  }
+
   Future<void> _initUserId() async {
     debugPrint('🔑 Initializing user ID...');
+    
+    // D'abord, essayer de récupérer le userId persisté
+    final prefs = await SharedPreferences.getInstance();
+    final savedUserId = prefs.getString('chat_user_id');
+    
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       _currentUserId = user.uid;
+      // Persister le userId Firebase
+      await prefs.setString('chat_user_id', _currentUserId!);
       debugPrint('✅ User already logged in: $_currentUserId');
-      loadConversations();
+      _startWatchingConversations();
+    } else if (savedUserId != null) {
+      // Utiliser le userId sauvegardé
+      _currentUserId = savedUserId;
+      debugPrint('✅ Using saved userId: $_currentUserId');
+      _startWatchingConversations();
     } else {
       try {
         debugPrint('🔄 No user, signing in anonymously...');
         final result = await FirebaseAuth.instance.signInAnonymously();
         _currentUserId = result.user?.uid;
+        if (_currentUserId != null) {
+          await prefs.setString('chat_user_id', _currentUserId!);
+        }
         debugPrint('✅ Anonymous sign in successful: $_currentUserId');
-        loadConversations();
+        _startWatchingConversations();
       } catch (e) {
         debugPrint('❌ Anonymous sign in failed: $e');
+        // Créer un userId local et le persister
         _currentUserId = 'local_${DateTime.now().millisecondsSinceEpoch}';
-        _loadMockConversations();
+        await prefs.setString('chat_user_id', _currentUserId!);
+        _startWatchingConversations();
       }
     }
+  }
+
+  /// Démarre l'écoute temps réel des conversations
+  void _startWatchingConversations() {
+    if (_currentUserId == null || _repository == null) {
+      debugPrint('❌ Cannot watch conversations: userId=$_currentUserId, repo=$_repository');
+      loadConversations(); // Fallback
+      return;
+    }
+
+    debugPrint('👀 Starting real-time watch for user: $_currentUserId');
+    state = state.copyWith(isLoading: true);
+    
+    _conversationsSubscription?.cancel();
+    _conversationsSubscription = _repository.watchConversations(_currentUserId!).listen(
+      (conversations) {
+        debugPrint('📥 Real-time update: ${conversations.length} conversations');
+        state = ConversationsState(conversations: conversations);
+      },
+      onError: (e) {
+        debugPrint('❌ Watch error: $e');
+        state = ConversationsState(conversations: [], error: 'Erreur: $e');
+      },
+    );
   }
 
   Future<void> loadConversations() async {
@@ -125,7 +175,13 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
     String? annonceId,
     String? annonceTitre,
   }) async {
-    if (_currentUserId == null) return null;
+    if (_currentUserId == null) {
+      debugPrint('❌ startConversation: _currentUserId is null');
+      state = state.copyWith(error: 'Utilisateur non connecté');
+      return null;
+    }
+
+    debugPrint('🚀 startConversation: userId=$_currentUserId, sellerId=$sellerId');
 
     try {
       if (_repository != null) {
@@ -136,10 +192,13 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
           annonceTitre: annonceTitre,
         );
 
+        debugPrint('✅ Conversation created/found: ${conversation.id}');
+        
         // Recharger les conversations
         loadConversations();
         return conversation;
       } else {
+        debugPrint('⚠️ Repository is null, using mock');
         // Mock
         final mockConv = ConversationModel(
           id: 'new_${DateTime.now().millisecondsSinceEpoch}',
@@ -156,8 +215,9 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
         return mockConv;
       }
     } catch (e) {
+      debugPrint('❌ startConversation error: $e');
       state = state.copyWith(
-        error: 'Erreur lors de la creation de la conversation',
+        error: 'Erreur lors de la creation de la conversation: $e',
       );
       return null;
     }

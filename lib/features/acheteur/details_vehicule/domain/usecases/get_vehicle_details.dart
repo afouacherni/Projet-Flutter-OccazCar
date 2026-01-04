@@ -14,6 +14,7 @@ class VehicleDetailsModel {
   final VehicleFeatures? features;
   final DateTime? publishedAt;
   final int viewCount;
+  final RapportVehiculeModel? rapport;
 
   const VehicleDetailsModel({
     required this.annonce,
@@ -26,6 +27,7 @@ class VehicleDetailsModel {
     this.features,
     this.publishedAt,
     this.viewCount = 0,
+    this.rapport,
   });
 }
 

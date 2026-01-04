@@ -23,21 +23,38 @@ class ChatFirestoreService {
     String? annonceId,
     String? annonceTitre,
   }) async {
+    debugPrint('🔍 getOrCreateConversation START');
+    debugPrint('  - participant1: $participant1Id');
+    debugPrint('  - participant2: $participant2Id');
+    debugPrint('  - annonceId: $annonceId');
+    debugPrint('  - annonceTitre: $annonceTitre');
+    
+    // Validation: les IDs ne doivent pas être vides
+    if (participant1Id.isEmpty || participant2Id.isEmpty) {
+      throw Exception('Les IDs des participants ne peuvent pas être vides. participant1: "$participant1Id", participant2: "$participant2Id"');
+    }
+    
     try {
       // Chercher une conversation existante
+      debugPrint('🔎 Searching for existing conversation...');
       final existing =
           await _conversationsRef
               .where('participantIds', arrayContains: participant1Id)
               .get();
 
+      debugPrint('📄 Found ${existing.docs.length} conversations containing participant1');
+
       for (var doc in existing.docs) {
         final data = doc.data();
         final participants = List<String>.from(data['participantIds'] ?? []);
         if (participants.contains(participant2Id)) {
+          debugPrint('✅ Found existing conversation: ${doc.id}');
           return ConversationModel.fromJson({...data, 'id': doc.id});
         }
       }
 
+      debugPrint('📝 Creating new conversation...');
+      
       // Creer une nouvelle conversation
       final conversationData = {
         'participantIds': [participant1Id, participant2Id],
@@ -50,6 +67,7 @@ class ChatFirestoreService {
       };
 
       final docRef = await _conversationsRef.add(conversationData);
+      debugPrint('✅ Created conversation with id: ${docRef.id}');
 
       return ConversationModel(
         id: docRef.id,
@@ -60,7 +78,9 @@ class ChatFirestoreService {
         lastMessageTime: DateTime.now(),
         createdAt: DateTime.now(),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error in getOrCreateConversation: $e');
+      debugPrint('📋 Stack trace: $stackTrace');
       throw Exception('Erreur lors de la creation de la conversation: $e');
     }
   }

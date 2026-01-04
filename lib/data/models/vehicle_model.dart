@@ -16,6 +16,9 @@ class VehicleModel {
     this.photos = const [],
   });
 
+  /// Alias pour compatibilité
+  List<String> get photoUrls => photos;
+
   /// Retourne la première photo ou null
   String? get mainPhoto => photos.isNotEmpty ? photos.first : null;
 
@@ -25,7 +28,8 @@ class VehicleModel {
     model: json['model'] as String,
     year: json['year'] as int,
     mileage: json['mileage'] as int,
-    photos: (json['photos'] as List<dynamic>?)?.cast<String>() ?? [],
+    photos: (json['photos'] as List<dynamic>?)?.cast<String>() ?? 
+            (json['photoUrls'] as List<dynamic>?)?.cast<String>() ?? [],
   );
 
   Map<String, dynamic> toJson() => {

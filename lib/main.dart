@@ -7,12 +7,34 @@ import 'firebase_options.dart';
 // Import du thème
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_colors.dart';
+import 'core/routes/app_router.dart' as app_router;
+import 'features/auth/presentation/pages/startup_page.dart';
+import 'features/auth/presentation/pages/login_page.dart';
+import 'features/auth/presentation/pages/register_page.dart';
+import 'features/auth/presentation/pages/profile_page.dart';
 
-// Import des pages de l'Interface Acheteur (Personne 3)
+// Import du provider des annonces récentes
+import 'features/acheteur/home/providers/annonces_recentes_provider.dart';
+
+// Import du provider des notifications
+import 'features/notifications/presentation/providers/notifications_provider.dart';
+
+// Import des pages de l'Interface Acheteur
 import 'features/acheteur/recherche/presentation/pages/recherche_page.dart';
 import 'features/acheteur/favoris/presentation/pages/favoris_page.dart';
 import 'features/acheteur/details_vehicule/presentation/pages/details_vehicule_page.dart';
+import 'features/acheteur/alertes/presentation/pages/alertes_page.dart';
 import 'features/chat/presentation/pages/conversations_page.dart';
+
+// Import des pages de notifications
+import 'features/notifications/presentation/pages/notifications_page.dart';
+
+// Import des pages de l'Interface Vendeur
+import 'features/vendeur/presentation/pages/vendeur_home_page.dart';
+import 'features/vendeur/gestion_annonces/presentation/pages/mes_annonces_page.dart';
+import 'features/vendeur/offres/presentation/pages/offres_recues_page.dart';
+import 'features/vendeur/publication/presentation/pages/create_annonce_page.dart';
+import 'features/vendeur/gestion_annonces/presentation/pages/statistiques_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,11 +69,16 @@ class OccazCarApp extends StatelessWidget {
       title: 'OccazCar',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
-      home: const MainNavigationPage(),
+      home: const StartupPage(),
       routes: {
-        '/search': (context) => const RecherchePage(),
-        '/favorites': (context) => const FavorisPage(),
-        '/messages': (context) => const ConversationsPage(),
+        // Merge core app routes (acheteur + vendeur)
+        ...app_router.AppRouter.routes,
+        // Auth routes (login/register/profile)
+        '/login': (context) => const LoginPage(),
+        '/register': (context) => const RegisterPage(),
+        '/profile': (context) => const ProfilePage(),
+        // Shortcut to main navigation after auth
+        '/home': (context) => const MainNavigationPage(),
       },
       onGenerateRoute: (settings) {
         // Route pour les détails de véhicule
@@ -180,11 +207,13 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
 }
 
 /// Page d'accueil moderne
-class HomePage extends StatelessWidget {
+class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final annoncesState = ref.watch(annoncesRecentesProvider);
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -234,17 +263,8 @@ class HomePage extends StatelessWidget {
                           ),
                         ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha((0.2 * 255).round()),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.notifications_outlined,
-                          color: Colors.white,
-                        ),
-                      ),
+                      // Icône notifications avec badge
+                      _buildNotificationIcon(context, ref),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -353,16 +373,25 @@ class HomePage extends StatelessWidget {
             ),
           ),
 
-          // Liste horizontale des annonces
+          // Liste horizontale des annonces (depuis Firebase)
           SliverToBoxAdapter(
             child: SizedBox(
               height: 260,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: 5,
-                itemBuilder: (context, index) => _buildCarCard(context, index),
-              ),
+              child:
+                  annoncesState.isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : annoncesState.annonces.isEmpty
+                      ? _buildEmptyAnnonces(ref)
+                      : ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: annoncesState.annonces.length,
+                        itemBuilder:
+                            (context, index) => _buildAnnonceCard(
+                              context,
+                              annoncesState.annonces[index],
+                            ),
+                      ),
             ),
           ),
 
@@ -406,7 +435,9 @@ class HomePage extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           ElevatedButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/vendeur');
+                            },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.white,
                               foregroundColor: AppColors.primary,
@@ -454,48 +485,52 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildCarCard(BuildContext context, int index) {
-    final cars = [
-      {
-        'make': 'BMW',
-        'model': 'Serie 3',
-        'price': '25 000',
-        'image':
-            'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=400',
-      },
-      {
-        'make': 'Mercedes',
-        'model': 'Classe C',
-        'price': '32 000',
-        'image':
-            'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=400',
-      },
-      {
-        'make': 'Audi',
-        'model': 'A4',
-        'price': '28 500',
-        'image':
-            'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=400',
-      },
-      {
-        'make': 'Volkswagen',
-        'model': 'Golf',
-        'price': '18 000',
-        'image':
-            'https://images.unsplash.com/photo-1471444928139-48c5bf5173f8?w=400',
-      },
-      {
-        'make': 'Peugeot',
-        'model': '308',
-        'price': '15 500',
-        'image':
-            'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400',
-      },
-    ];
-    final car = cars[index];
+  /// Widget quand il n'y a pas d'annonces
+  Widget _buildEmptyAnnonces(WidgetRef ref) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.directions_car_outlined,
+            size: 48,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Aucune annonce pour le moment',
+            style: TextStyle(color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed:
+                () => ref.read(annoncesRecentesProvider.notifier).refresh(),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Actualiser'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Carte d'une annonce réelle depuis Firebase
+  Widget _buildAnnonceCard(BuildContext context, dynamic annonce) {
+    // Extraire les données de l'annonce
+    final String make = annonce.vehicle?.make ?? 'Marque';
+    final String model = annonce.vehicle?.model ?? 'Modèle';
+    final int year = annonce.vehicle?.year ?? 2024;
+    final int mileage = annonce.vehicle?.mileage ?? 0;
+    final double price = annonce.price ?? 0;
+
+    // Récupérer les photos depuis le vehicle ou directement
+    final List<String> photoUrls = annonce.vehicle?.photos ?? [];
+    final String imageUrl =
+        photoUrls.isNotEmpty
+            ? photoUrls.first
+            : 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400';
 
     return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, '/details/${index + 1}'),
+      onTap: () => Navigator.pushNamed(context, '/details/${annonce.id}'),
       child: Container(
         width: 200,
         margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
@@ -519,7 +554,7 @@ class HomePage extends StatelessWidget {
                 top: Radius.circular(20),
               ),
               child: Image.network(
-                car['image']!,
+                imageUrl,
                 height: 130,
                 width: double.infinity,
                 fit: BoxFit.cover,
@@ -542,7 +577,7 @@ class HomePage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${car['make']} ${car['model']}',
+                    '$make $model',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -552,12 +587,12 @@ class HomePage extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '2022 • 25 000 km',
+                    '$year • ${_formatKilometrage(mileage)} km',
                     style: TextStyle(color: Colors.grey[500], fontSize: 12),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${car['price']} €',
+                    '${_formatPrice(price)} €',
                     style: const TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
@@ -567,6 +602,70 @@ class HomePage extends StatelessWidget {
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatKilometrage(int km) {
+    if (km >= 1000) {
+      return '${(km / 1000).toStringAsFixed(0)} 000';
+    }
+    return km.toString();
+  }
+
+  String _formatPrice(double price) {
+    return price
+        .toStringAsFixed(0)
+        .replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]} ',
+        );
+  }
+
+  /// Icône de notification avec badge
+  Widget _buildNotificationIcon(BuildContext context, WidgetRef ref) {
+    final notifState = ref.watch(notificationsProvider);
+    final unreadCount = notifState.unreadCount;
+
+    return GestureDetector(
+      onTap: () => Navigator.of(context).pushNamed('/notifications'),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha((0.2 * 255).round()),
+          shape: BoxShape.circle,
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            const Icon(Icons.notifications_outlined, color: Colors.white),
+            if (unreadCount > 0)
+              Positioned(
+                right: -6,
+                top: -6,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 18,
+                    minHeight: 18,
+                  ),
+                  child: Text(
+                    unreadCount > 9 ? '9+' : '$unreadCount',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -640,13 +739,54 @@ class ProfilePage extends StatelessWidget {
                   _buildMenuItem(Icons.history, 'Historique', () {}),
                   _buildMenuItem(
                     Icons.notifications_outlined,
-                    'Notifications',
-                    () {},
+                    'Mes alertes',
+                    () => Navigator.of(context).pushNamed('/alertes'),
                   ),
                   _buildMenuItem(Icons.security, 'Sécurité', () {}),
                   _buildMenuItem(Icons.help_outline, 'Aide', () {}),
                   _buildMenuItem(Icons.info_outline, 'À propos', () {}),
                   const SizedBox(height: 20),
+                  // Bouton Mode Vendeur
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      gradient: AppColors.primaryGradient,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withAlpha(
+                            (0.3 * 255).round(),
+                          ),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ListTile(
+                      leading: const Icon(Icons.store, color: Colors.white),
+                      title: const Text(
+                        'Espace Vendeur',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Gérez vos annonces',
+                        style: TextStyle(
+                          color: Colors.white.withAlpha((0.8 * 255).round()),
+                          fontSize: 12,
+                        ),
+                      ),
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                      onTap: () => Navigator.of(context).pushNamed('/vendeur'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   _buildMenuItem(
                     Icons.logout,
                     'Déconnexion',

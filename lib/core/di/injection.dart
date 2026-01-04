@@ -20,6 +20,9 @@ import '../../core/services/chat_service.dart';
 import '../../core/services/location_service.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/services/ai_service.dart';
+import '../../core/services/alerte_matching_service.dart';
+import '../../features/auth/presentation/providers/auth_provider.dart';
+import '../../features/auth/data/auth_repository_impl.dart';
 
 // Services distants
 
@@ -72,7 +75,9 @@ final aiServiceProvider = Provider<AIService>((ref) {
 });
 
 // Services Firestore pour l'Interface Acheteur
-final annonceFirestoreServiceProvider = Provider<AnnonceFirestoreService>((ref) {
+final annonceFirestoreServiceProvider = Provider<AnnonceFirestoreService>((
+  ref,
+) {
   return AnnonceFirestoreService();
 });
 
@@ -80,8 +85,15 @@ final favoriFirestoreServiceProvider = Provider<FavoriFirestoreService>((ref) {
   return FavoriFirestoreService();
 });
 
+// Service de matching des alertes
+final alerteMatchingServiceProvider = Provider<AlerteMatchingService>((ref) {
+  return AlerteMatchingService();
+});
+
 // Provider pour LocalStorageService (async)
-final localStorageServiceProvider = FutureProvider<LocalStorageService>((ref) async {
+final localStorageServiceProvider = FutureProvider<LocalStorageService>((
+  ref,
+) async {
   return await LocalStorageService.init();
 });
 
@@ -108,12 +120,22 @@ final chatRepositoryProvider = Provider<ChatRepository>((ref) {
 });
 
 // Reservation Firestore Service
-final reservationFirestoreServiceProvider = Provider<ReservationFirestoreService>((ref) {
-  return ReservationFirestoreService();
-});
+final reservationFirestoreServiceProvider =
+    Provider<ReservationFirestoreService>((ref) {
+      return ReservationFirestoreService();
+    });
 
 // Reservation Repository
 final reservationRepositoryProvider = Provider<ReservationRepository>((ref) {
   final firestoreService = ref.read(reservationFirestoreServiceProvider);
   return ReservationRepositoryImpl(firestoreService: firestoreService);
+});
+
+// Auth repository & provider
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  return AuthRepositoryImpl(ref.read(authServiceProvider));
+});
+
+final authProvider = ChangeNotifierProvider<AuthProvider>((ref) {
+  return AuthProvider(ref.read(authRepositoryProvider));
 });
