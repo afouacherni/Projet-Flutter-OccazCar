@@ -84,7 +84,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                       );
                                       Navigator.of(
                                         context,
-                                      ).pushReplacementNamed('/login');
+                                      ).pushReplacementNamed('/home');
                                     } catch (e) {
                                       final msg = e.toString();
                                       ScaffoldMessenger.of(
@@ -113,7 +113,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           onPressed: () {
                             Navigator.of(
                               context,
-                            ).pushReplacementNamed('/login');
+                            ).pushNamed('/login');
                           },
                           child: const Text(
                             'Vous avez déjà un compte ? Connexion',

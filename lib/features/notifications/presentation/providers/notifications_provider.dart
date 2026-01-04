@@ -195,6 +195,32 @@ class NotificationsNotifier extends StateNotifier<NotificationsState> {
       _startWatchingAll();
     }
   }
+
+  /// Crée une nouvelle notification
+  Future<void> createNotification({
+    required String userId,
+    required String title,
+    required String body,
+    NotificationType type = NotificationType.system,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      final notification = {
+        'userId': userId,
+        'title': title,
+        'body': body,
+        'type': type.name,
+        'data': data ?? {},
+        'read': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+      
+      await _firestore.collection('notifications').add(notification);
+      debugPrint('📧 Notification créée pour $userId: $title');
+    } catch (e) {
+      debugPrint('❌ Erreur création notification: $e');
+    }
+  }
 }
 
 /// Provider pour les notifications

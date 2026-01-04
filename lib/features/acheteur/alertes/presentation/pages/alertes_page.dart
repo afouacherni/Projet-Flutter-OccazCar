@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../data/models/alerte_recherche_model.dart';
+import '../../../../../data/models/notification_model.dart';
 import '../providers/alertes_provider.dart';
+import '../../../../notifications/presentation/providers/notifications_provider.dart';
 import 'creer_alerte_page.dart';
 
 class AlertesPage extends ConsumerStatefulWidget {
@@ -33,6 +35,12 @@ class _AlertesPageState extends ConsumerState<AlertesPage> {
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
+          // Bouton test notification
+          IconButton(
+            icon: const Icon(Icons.notification_add, color: Colors.orange),
+            onPressed: () => _testerNotification(),
+            tooltip: 'Tester notification',
+          ),
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () => _creerAlerte(),
@@ -149,46 +157,84 @@ class _AlertesPageState extends ConsumerState<AlertesPage> {
     );
   }
 
-  void _creerAlerte() {
-    Navigator.push(
-      context,
+  Future<void> _creerAlerte() async {
+    final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: (context) => const CreerAlertePage()),
     );
+
+    if (result == true && mounted) {
+      ref.read(alertesProvider.notifier).loadAlertes();
+    }
   }
 
-  void _modifierAlerte(AlerteRechercheModel alerte) {
-    Navigator.push(
-      context,
+  Future<void> _modifierAlerte(AlerteRechercheModel alerte) async {
+    final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (context) => CreerAlertePage(alerteExistante: alerte),
       ),
     );
+
+    if (result == true && mounted) {
+      ref.read(alertesProvider.notifier).loadAlertes();
+    }
   }
 
-  void _confirmerSuppression(AlerteRechercheModel alerte) {
-    showDialog(
+  Future<void> _confirmerSuppression(AlerteRechercheModel alerte) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer l\'alerte ?'),
-        content: Text(
-          'Êtes-vous sûr de vouloir supprimer l\'alerte "${alerte.nom}" ?',
-        ),
+        title: const Text('Supprimer l\'alerte'),
+        content: Text('Voulez-vous vraiment supprimer l\'alerte "${alerte.nom}" ?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Annuler'),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ref.read(alertesProvider.notifier).deleteAlerte(alerte.id);
-            },
+            onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Supprimer'),
           ),
         ],
       ),
     );
+
+    if (confirmed == true) {
+      ref.read(alertesProvider.notifier).deleteAlerte(alerte.id);
+    }
+  }
+
+  /// Méthode pour tester le système de notifications
+  Future<void> _testerNotification() async {
+    try {
+      await ref.read(notificationsProvider.notifier).createNotification(
+        userId: 'test_user', // À remplacer par l'ID utilisateur actuel
+        title: '🧪 Test de notification',
+        body: 'Cette notification confirme que le système fonctionne correctement!',
+        type: NotificationType.system,
+        data: {
+          'testTime': DateTime.now().toIso8601String(),
+        },
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Notification de test envoyée!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Erreur: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
 

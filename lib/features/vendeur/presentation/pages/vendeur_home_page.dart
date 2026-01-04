@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../main.dart';
 import '../../gestion_annonces/presentation/pages/mes_annonces_page.dart';
 import '../../gestion_annonces/presentation/pages/statistiques_page.dart';
 import '../../offres/presentation/pages/offres_recues_page.dart';
@@ -56,15 +57,35 @@ class _VendeurHomePageState extends State<VendeurHomePage> {
           ),
         ),
       ),
-      floatingActionButton: _currentIndex == 0 || _currentIndex == 1
-          ? FloatingActionButton.extended(
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Bouton de basculement vers l'interface acheteur
+          FloatingActionButton(
+            heroTag: 'switch_to_buyer',
+            onPressed: () {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => const MainNavigationPage(),
+                ),
+              );
+            },
+            backgroundColor: Colors.blue,
+            child: const Icon(Icons.search, color: Colors.white),
+          ),
+          if (_currentIndex == 0 || _currentIndex == 1) ...[
+            const SizedBox(height: 16),
+            // Bouton de publication
+            FloatingActionButton.extended(
               heroTag: 'fab_vendeur_home',
               onPressed: () => _navigateToCreateAnnonce(),
               backgroundColor: AppColors.primary,
               icon: const Icon(Icons.add),
               label: const Text('Publier'),
-            )
-          : null,
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -542,8 +563,12 @@ class VendeurProfilPage extends StatelessWidget {
                   _buildMenuItem(Icons.help_outline, 'Aide & Support', () {}),
                   const SizedBox(height: 20),
                   _buildMenuItem(Icons.swap_horiz, 'Mode Acheteur', () {
-                    // Retour au mode acheteur
-                    Navigator.of(context).pop();
+                    // Retour au mode acheteur avec navigation consistante
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (context) => const HomePage(),
+                      ),
+                    );
                   }),
                   _buildMenuItem(
                     Icons.logout,
