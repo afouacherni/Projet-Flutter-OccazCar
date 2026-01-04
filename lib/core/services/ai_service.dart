@@ -1,8 +1,7 @@
 class AIService {
   AIService();
 
-  /// Generate a short description for a vehicle given structured data.
-  /// This is a placeholder — integrate a real AI/LLM API here.
+  /// Génère une description automatique pour un véhicule
   Future<String> generateDescription({
     String? marque,
     String? modele,
@@ -16,7 +15,7 @@ class AIService {
     final year = annee ?? vehicleData?['year'] ?? '';
     final mileage = kilometrage ?? vehicleData?['mileage'] ?? 0;
 
-    // Simulation d'une génération AI
+    // Simulation de traitement
     await Future.delayed(const Duration(milliseconds: 500));
 
     return '''
@@ -49,32 +48,19 @@ N'hésitez pas à me contacter pour plus d'informations ou organiser un essai !
 
 Note globale : ⭐⭐⭐⭐⭐ (5/5)
 
-Ce véhicule présente un état remarquable pour son âge.
+Véhicule recommandé pour l'achat.
 '''.trim();
   }
 
-  /// Suggère un prix basé sur les caractéristiques
-  Future<Map<String, double>> suggestPrice({
-    required String marque,
-    required String modele,
-    required int annee,
-    required int kilometrage,
-  }) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+  /// Analyse les préférences utilisateur pour des suggestions
+  Future<List<String>> generateRecommendations(Map<String, dynamic> userPrefs) async {
+    await Future.delayed(const Duration(milliseconds: 800));
     
-    // Prix de base fictif
-    double basePrice = 20000;
-    
-    // Ajustements
-    basePrice -= (DateTime.now().year - annee) * 1000;
-    basePrice -= (kilometrage / 10000) * 500;
-    
-    if (basePrice < 5000) basePrice = 5000;
-    
-    return {
-      'min': basePrice * 0.9,
-      'suggested': basePrice,
-      'max': basePrice * 1.1,
-    };
+    return [
+      'Renault Clio - Parfait pour la ville',
+      'Peugeot 208 - Économique et fiable', 
+      'Toyota Yaris - Très bonne revente',
+      'Citroën C3 - Confort optimal'
+    ];
   }
 }

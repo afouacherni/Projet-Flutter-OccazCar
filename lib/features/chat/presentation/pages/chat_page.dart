@@ -59,7 +59,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(messagesProvider(_providerParams));
 
-    // Auto-scroll quand nouveaux messages
+    // Défilement automatique vers les nouveaux messages
     if (state.messages.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
     }

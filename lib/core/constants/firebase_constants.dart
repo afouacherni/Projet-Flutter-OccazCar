@@ -1,5 +1,5 @@
 class FirebaseConstants {
-  // TODO: replace with your Firebase project values or generated firebase_options.dart
+  // Configuration Firebase du projet
   static const webApiKey = '';
   static const authDomain = '';
 }

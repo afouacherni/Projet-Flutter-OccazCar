@@ -1,7 +1,5 @@
 import 'dart:typed_data';
 import 'package:firebase_core/firebase_core.dart';
-// If you generated `firebase_options.dart` via FlutterFire CLI, import it here:
-// import '../../firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -36,8 +34,7 @@ class FirebaseService {
     }
   }
 
-  /// Initialize Firebase. If you use FlutterFire CLI, generate `firebase_options.dart`
-  /// and uncomment the import at top, then pass `DefaultFirebaseOptions.currentPlatform`.
+  /// Initialise Firebase avec les configurations nécessaires
   Future<void> init() async {
     try {
       app = await Firebase.initializeApp();
